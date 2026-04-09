@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Enrollment Form</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- JsonPowerDB -->
+    <script src="http://login2explore.com/jpdb/resources/js/jpdb-commons.js"></script>
+</head>
+
+<body onload="resetForm()">
+
+<div class="container">
+    <h2>Student Enrollment Form</h2>
+
+    <form id="studentForm">
+
+        <div class="form-group">
+            <label>Roll No:</label>
+            <input type="text" id="rollNo" class="form-control" onblur="getStudent()">
+        </div>
+
+        <div class="form-group">
+            <label>Full Name:</label>
+            <input type="text" id="name" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Class:</label>
+            <input type="text" id="class" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Birth Date:</label>
+            <input type="date" id="birth" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Address:</label>
+            <input type="text" id="address" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Enrollment Date:</label>
+            <input type="date" id="enroll" class="form-control">
+        </div>
+
+        <button type="button" id="saveBtn" class="btn btn-success" onclick="saveData()">Save</button>
+        <button type="button" id="updateBtn" class="btn btn-primary" onclick="updateData()">Update</button>
+        <button type="button" id="resetBtn" class="btn btn-warning" onclick="resetForm()">Reset</button>
+
+    </form>
+</div>
+
+<script>
+
+var jpdbBaseURL = "http://api.login2explore.com:5577";
+var jpdbIML = "/api/iml";
+var dbName = "SCHOOL-DB";
+var relName = "STUDENT-TABLE";
+var connToken = "PASTE_YOUR_TOKEN_HERE"; // 🔴 Put your token
+
+// RESET FORM
+function resetForm() {
+    $("#studentForm")[0].reset();
+
+    $("#rollNo").prop("disabled", false);
+    $("#name, #class, #birth, #address, #enroll").prop("disabled", true);
+
+    $("#saveBtn").prop("disabled", true);
+    $("#updateBtn").prop("disabled", true);
+    $("#resetBtn").prop("disabled", true);
+
+    $("#rollNo").focus();
+}
+
+// VALIDATION
+function validateForm() {
+    return $("#rollNo").val() &&
+           $("#name").val() &&
+           $("#class").val() &&
+           $("#birth").val() &&
+           $("#address").val() &&
+           $("#enroll").val();
+}
+
+// GET STUDENT
+ function getStudent() {
+    var roll = $("#rollNo").val();
+
+    if (roll === "") return;
+
+    // 🔥 FORCE ENABLE (IMPORTANT FIX)
+    $("#name, #class, #birth, #address, #enroll").prop("disabled", false);
+
+    // Try DB call (optional)
+    try {
+        var getReq = createGET_BY_KEYRequest(connToken, dbName, relName, JSON.stringify({"Roll-No": roll}));
+
+        jQuery.ajaxSetup({async: false});
+        var res = executeCommandAtGivenBaseUrl(getReq, jpdbBaseURL, jpdbIML);
+        jQuery.ajaxSetup({async: true});
+
+        if (res.status !== 400 && res.data) {
+            var data = JSON.parse(res.data).record;
+
+            $("#name").val(data["Full-Name"]);
+            $("#class").val(data["Class"]);
+            $("#birth").val(data["Birth-Date"]);
+            $("#address").val(data["Address"]);
+            $("#enroll").val(data["Enrollment-Date"]);
+
+            $("#rollNo").prop("disabled", true);
+
+            $("#updateBtn, #resetBtn").prop("disabled", false);
+            $("#saveBtn").prop("disabled", true);
+        } else {
+            $("#saveBtn, #resetBtn").prop("disabled", false);
+            $("#updateBtn").prop("disabled", true);
+        }
+    } catch (e) {
+        // If DB fails → still allow form usage
+        $("#saveBtn, #resetBtn").prop("disabled", false);
+    }
+
+    $("#name").focus();
+}
+// SAVE DATA
+function saveData() {
+    if (!validateForm()) {
+        alert("Fill all fields");
+        return;
+    }
+
+    var jsonStr = {
+        "Roll-No": $("#rollNo").val(),
+        "Full-Name": $("#name").val(),
+        "Class": $("#class").val(),
+        "Birth-Date": $("#birth").val(),
+        "Address": $("#address").val(),
+        "Enrollment-Date": $("#enroll").val()
+    };
+
+    var putReq = createPUTRequest(connToken, JSON.stringify(jsonStr), dbName, relName);
+
+    jQuery.ajaxSetup({async: false});
+    executeCommandAtGivenBaseUrl(putReq, jpdbBaseURL, jpdbIML);
+    jQuery.ajaxSetup({async: true});
+
+    alert("Data Saved!");
+    resetForm();
+}
+
+// UPDATE DATA
+function updateData() {
+    if (!validateForm()) {
+        alert("Fill all fields");
+        return;
+    }
+
+    var jsonStr = {
+        "Roll-No": $("#rollNo").val(),
+        "Full-Name": $("#name").val(),
+        "Class": $("#class").val(),
+        "Birth-Date": $("#birth").val(),
+        "Address": $("#address").val(),
+        "Enrollment-Date": $("#enroll").val()
+    };
+
+    var updateReq = createUPDATERecordRequest(connToken, JSON.stringify(jsonStr), dbName, relName);
+
+    jQuery.ajaxSetup({async: false});
+    executeCommandAtGivenBaseUrl(updateReq, jpdbBaseURL, jpdbIML);
+    jQuery.ajaxSetup({async: true});
+
+    alert("Data Updated!");
+    resetForm();
+}
+
+</script>
+
+</body>
+</html>
